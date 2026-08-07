@@ -33,5 +33,12 @@
     "baseline_price": 72000.0,
     "make_code": "SHINE",
     "learned_at": "2026-08-07T06:42:59.818993"
+  },
+  "apache": {
+    "canonical_name": "Apache",
+    "engine_cc": 160.0,
+    "baseline_price": 105000.0,
+    "make_code": "APACHE",
+    "learned_at": "2026-08-07T15:54:23.186452"
   }
 }

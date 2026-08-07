@@ -170,8 +170,8 @@ def lookup_unseen_vehicle_on_the_fly(vehicle_name: str) -> Optional[Dict[str, An
                 temperature=0.0,
                 max_tokens=150
             )
-            content = res.choices[0].message.content.strip()
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            content = (res.choices[0].message.content or "").strip()
+            json_match = re.search(r'\{[^{}]*\}', content, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group(0))
             else:
@@ -306,8 +306,8 @@ def extract_facts_with_groq(text: str, current_facts: Dict[str, Any], pending_fe
                 temperature=0.0,
                 max_tokens=200
             )
-            content = response.choices[0].message.content.strip()
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            content = (response.choices[0].message.content or "").strip()
+            json_match = re.search(r'\{[^{}]*\}', content, re.DOTALL)
             if json_match:
                 extracted = json.loads(json_match.group(0))
             else:
