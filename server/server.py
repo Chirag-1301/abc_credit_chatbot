@@ -340,41 +340,62 @@ def extract_facts_with_groq(text: str, current_facts: Dict[str, Any], pending_fe
                 merged['vehicle_name'] = learned_info['canonical_name']
                 merged['suggested_price'] = learned_info['baseline_price']
                 
-        if 'make_code' in merged and 'suggested_price' not in merged:
-            merged['suggested_price'] = get_catalog_price_for_make(merged['make_code'], merged.get('vehicle_name'))
-            
         return merged
     except Exception as e:
         print(f"Groq LLM extraction fallback: {e}")
-        return extract_facts_from_text(text, current_facts)
+        return extract_facts_from_text(text, current_facts, pending_feature)
 
-def extract_facts_from_text(text: str, current_facts: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_user_text(text: str) -> str:
+    """Normalizes raw user input text converting currency shorthands like '110k' -> '110000', '1.1 lakh' -> '110000'."""
+    t = text.strip().lower().replace(',', '')
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|l)\b', lambda m: str(int(float(m.group(1)) * 100000)), t)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*k\b', lambda m: str(int(float(m.group(1)) * 1000)), t)
+    return t
+
+def extract_facts_from_text(text: str, current_facts: Dict[str, Any], pending_feature: str = None) -> Dict[str, Any]:
     """Rule-based & Regex NLU Extractor with On-The-Fly learning fallback for unseen vehicles."""
     facts = dict(current_facts)
-    text_clean = text.strip().lower()
+    text_clean = normalize_user_text(text)
     
-    # 1. Pincode Extraction (6 digits starting with 1-8)
+    # Extract any 4 to 7 digit numbers after normalization (e.g. 110000 from 110k)
+    digits = re.findall(r'\b\d{4,7}\b', text_clean)
+    parsed_nums = [float(d) for d in digits if int(d) != int(facts.get('pincode', 0))]
+    
+    # 0. Contextual Pending Feature Extraction
+    if pending_feature == 'vehicle_price' and parsed_nums and 'vehicle_price' not in facts:
+        facts['vehicle_price'] = parsed_nums[0]
+    elif pending_feature == 'loan_amount' and parsed_nums and 'loan_amount' not in facts:
+        facts['loan_amount'] = parsed_nums[0]
+    elif pending_feature == 'net_salary' and parsed_nums and 'net_salary' not in facts:
+        facts['net_salary'] = parsed_nums[0]
+        
+    # 1. Pincode Extraction (6 digits starting with 1-8, guarded by context to prevent 110000 price misidentification)
+    pin_keywords = ['pincode', 'pin', 'zip', 'postal', 'area', 'location', 'sector']
+    is_pin_context = pending_feature == 'pincode' or any(k in text_clean for k in pin_keywords)
     pin_match = re.search(r'\b([1-8]\d{5})\b', text_clean)
-    if pin_match and 'pincode' not in facts:
+    if pin_match and 'pincode' not in facts and is_pin_context:
         facts['pincode'] = pin_match.group(1)
         
-    # 2. Loan Amount & Net Salary Extraction
-    digits = re.findall(r'\b\d{4,7}\b', text_clean)
-    numbers = [int(d) for d in digits if int(d) != int(facts.get('pincode', 0))]
-    
+    # 2. General Loan Amount, Vehicle Price & Net Salary Extraction
     salary_keywords = ['salary', 'earn', 'income', 'pm', 'per month', 'monthly', 'make']
     is_salary_context = any(k in text_clean for k in salary_keywords)
     
-    for num in numbers:
-        if 8000 <= num <= 500000:
+    for num in parsed_nums:
+        if pending_feature == 'vehicle_price' and 'vehicle_price' not in facts:
+            facts['vehicle_price'] = num
+        elif pending_feature == 'loan_amount' and 'loan_amount' not in facts:
+            facts['loan_amount'] = num
+        elif pending_feature == 'net_salary' and 'net_salary' not in facts:
+            facts['net_salary'] = num
+        elif 8000 <= num <= 500000:
             if is_salary_context or 'net_salary' not in facts:
                 if 'net_salary' not in facts:
-                    facts['net_salary'] = float(num)
+                    facts['net_salary'] = num
                 elif 'loan_amount' not in facts and num != facts.get('net_salary'):
-                    facts['loan_amount'] = float(num)
+                    facts['loan_amount'] = num
         elif 15000 <= num <= 500000:
             if 'loan_amount' not in facts:
-                facts['loan_amount'] = float(num)
+                facts['loan_amount'] = num
                 
     # 3. Training Dataset Vehicles
     training_makes = {
