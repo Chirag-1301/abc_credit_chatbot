@@ -571,10 +571,13 @@ def evaluate_intermediate_stage(facts: Dict[str, Any]) -> tuple[float, str, bool
     prob_default = float(model.predict_proba(X_input)[0, 1])
     decision = "DECLINED" if prob_default >= decision_threshold else "APPROVED"
     
-    # Early Exit Criteria: Only trigger early exit if model certainty is extremely high (PD <= 0.025 or PD >= 0.16).
-    # Borderline profiles (0.025 < PD < 0.16) will continue collecting employment, residence, and pincode!
-    num_facts = len([k for k in ['pincode', 'make_code', 'loan_amount', 'net_salary'] if k in facts])
-    is_confident = (num_facts >= 3) and (prob_default <= 0.025 or prob_default >= 0.16)
+    # High Leverage / High Ratio Guard: Applicants with LTV > 80%, FOIR > 35%, or Salary < 25k 
+    # MUST NOT exit early without disclosing Employment, Residence Status, and Pincode!
+    required_x_facts = {'make_code', 'vehicle_price', 'loan_amount', 'net_salary'}
+    has_x_facts = required_x_facts.issubset(set(facts.keys()))
+    is_high_leverage = (ltv > 80.0) or (foir > 0.35) or (net_salary < 25000.0)
+    
+    is_confident = has_x_facts and (not is_high_leverage) and (prob_default <= 0.015 or prob_default >= 0.160)
     
     return prob_default, decision, is_confident
 
