@@ -95,7 +95,7 @@ Evaluated on `108,423` applications (`102,725` Approved vs `5,698` Declined):
 
 4. **Launch the FastAPI Server**:
    ```bash
-   python server/server.py
+   python3 server/server.py
    ```
    The server will start at `http://localhost:8000`.
 
