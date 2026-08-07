@@ -3,3 +3,4 @@
 logs/
 __pycache__/
 model/base_lgbm_model.joblib
+*.pptx
