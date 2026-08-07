@@ -146,4 +146,67 @@ describe('ABC Credit Instant Loan Approval Engine & AI Chatbot Demo Suite', () =
     cy.wait(5000); // Finale pause to explain adverse action codes to class
   });
 
+  it('Demo Case 3: Complete 9-Step Data Collection & High-Creditworthiness Approval Path (Takes All Inputs -> Approved)', () => {
+    // Step 1: Applicant Name & Gender
+    cy.get('#chat-input-text').type('Ananya Roy, Female', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 2: Vehicle Model (Honda Shine)
+    cy.get('#chat-input-text').type('Honda Shine', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 3: Negotiated Vehicle Price (110k)
+    cy.get('#chat-input-text').type('110k', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 4: Requested Loan Amount (91k - LTV 82.7% forces complete data collection)
+    cy.get('#chat-input-text').type('91k', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 5: Net Monthly Salary (45k)
+    cy.get('#chat-input-text').type('45k', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.contains('.message-bot', 'employment sector', { timeout: 10000 }).should('exist');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 6: Employment Sector (Salaried Private Corporate)
+    cy.get('#chat-input-text').type('Salaried private corporate employee', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.contains('.message-bot', 'residential status', { timeout: 10000 }).should('exist');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 7: Residential Status (Owned Family House)
+    cy.get('#chat-input-text').type('Owned family house', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.contains('.message-bot', 'Pincode', { timeout: 10000 }).should('exist');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 8: Pincode (560100 - Electronic City, Bengaluru - Low Risk Area)
+    cy.get('#chat-input-text').type('560100', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+    cy.contains('.message-bot', 'age', { timeout: 10000 }).should('exist');
+    cy.wait(STEP_PAUSE_MS);
+
+    // Step 9: Age (32)
+    cy.get('#chat-input-text').type('32', { delay: TYPE_SPEED_MS });
+    cy.get('#btn-send-chat').click();
+    cy.wait('@chatTurn');
+
+    // Verify Final Decision Card - APPROVED after completing all 9 steps!
+    cy.contains('Loan APPROVED', { timeout: 15000 }).scrollIntoView().should('exist');
+    cy.wait(5000); // Finale pause to point out 100.0/100 score to class
+  });
+
 });
