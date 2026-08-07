@@ -220,6 +220,10 @@ def get_catalog_price_for_make(make_code: str, vehicle_name: str = None) -> floa
 
 def extract_facts_with_groq(text: str, current_facts: Dict[str, Any], pending_feature: str = None) -> Dict[str, Any]:
     """Uses Groq LLM to parse raw user natural language directly into structured JSON slots without any regex or salary ceilings."""
+    correction_signals = ['wait', 'mistake', 'wrong', 'correct', 'correction', 'actual', 'instead', 'change', 'sorry', 'oops', 'my salary']
+    if any(sig in text.lower() for sig in correction_signals):
+        pending_feature = None
+
     slot_instruction = ""
     if pending_feature == 'make_code':
         slot_instruction = (
