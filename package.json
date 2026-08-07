@@ -1,0 +1,27 @@
+{
+  "name": "abc_credit_chatbot",
+  "version": "1.0.0",
+  "description": "[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/) [![FastAPI](https://img.shields.io/badge/FastAPI-2.0.0-green.svg)](https://fastapi.tiangolo.com/) [![LightGBM](https://img.shields.io/badge/LightGBM-0.9253_ROC--AUC-brightgreen.svg)](https://lightgbm.readthedocs.io/) [![Groq LLM](https://img.shields.io/badge/Groq_LLM-Llama--3.1--8b-orange.svg)](https://groq.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)",
+  "main": "index.js",
+  "scripts": {
+    "test": "cypress run",
+    "cy:run": "cypress run",
+    "cy:open": "cypress open",
+    "demo": "cypress run --headed --no-exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chirag-1301/abc_credit_chatbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Chirag-1301/abc_credit_chatbot/issues"
+  },
+  "homepage": "https://github.com/Chirag-1301/abc_credit_chatbot#readme",
+  "devDependencies": {
+    "cypress": "^15.20.0"
+  }
+}

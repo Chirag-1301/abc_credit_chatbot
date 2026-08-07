@@ -5,3 +5,6 @@ __pycache__/
 model/base_lgbm_model.joblib
 *.pptx
 deliverables/
+node_modules/
+cypress/screenshots/
+cypress/downloads/
