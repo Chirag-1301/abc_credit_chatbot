@@ -38,6 +38,10 @@
                     <span class="status-dot"></span>
                     <span>Real-Time ML Active</span>
                 </div>
+                <div id="groq-status-badge" class="badge badge-pulse" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10B981;">
+                    <span class="status-dot" style="background: #10B981; box-shadow: 0 0 8px #10B981;"></span>
+                    <span id="groq-status-text">⚡ Groq LLM Active</span>
+                </div>
                 <div class="badge badge-outline">
                     <i class="fa-solid fa-clock"></i>
                     <span>Goal: &le; 1.5 Mins</span>
@@ -68,6 +72,10 @@
 
                 <div class="panel-card metrics-card">
                     <h3><i class="fa-solid fa-chart-line"></i> Decision Engine SLAs</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Groq NLU Engine</span>
+                        <span id="sidebar-groq-status" class="metric-value text-emerald">⚡ Connected (Llama-3.1-8b)</span>
+                    </div>
                     <div class="metric-row">
                         <span class="metric-label">Model Accuracy</span>
                         <span class="metric-value text-emerald">92.24%</span>

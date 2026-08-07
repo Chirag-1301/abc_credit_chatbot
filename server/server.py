@@ -1018,6 +1018,8 @@ def health_check():
     return {
         'status': 'healthy',
         'model_loaded': True,
+        'groq_connected': groq_client is not None,
+        'groq_model': 'llama-3.1-8b-instant' if groq_client else 'offline',
         'model_metrics': {
             'roc_auc': metadata['roc_auc'],
             'accuracy': metadata['accuracy'],

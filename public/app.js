@@ -49,9 +49,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Fetch Health Status & Groq LLM Connectivity
+    async function checkHealthStatus() {
+        try {
+            const res = await fetch('/api/health');
+            const data = await res.json();
+            const badgeText = document.getElementById('groq-status-text');
+            const sidebarText = document.getElementById('sidebar-groq-status');
+            
+            if (data.groq_connected) {
+                if (badgeText) badgeText.innerText = "⚡ Groq LLM Connected";
+                if (sidebarText) sidebarText.innerText = "⚡ Connected (Llama-3.1-8b)";
+            } else {
+                if (badgeText) badgeText.innerText = "⚠️ Groq LLM Offline";
+                if (sidebarText) sidebarText.innerText = "⚠️ Offline Fallback";
+            }
+        } catch (err) {
+            console.error('Failed health check:', err);
+        }
+    }
+
     // Initialize Chat
     async function initChat() {
         await loadVehicleCatalog();
+        await checkHealthStatus();
         appendBotMessage("<p>Hello! Welcome to <strong>ABC Credit</strong>. I am your instant AI loan approval assistant. 🚀</p><p>Answer quick questions or type naturally in the chatbox below for an instant pre-approval decision!</p>");
         renderStepInput(1);
     }
