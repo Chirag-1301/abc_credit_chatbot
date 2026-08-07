@@ -95,6 +95,15 @@ def mask_pincode(pincode: Any) -> str:
         return f"{pin_str[:2]}****"
     return pin_str[:1] + "***"
 
+# Auto-load .env file if present
+env_file = os.path.join(BASE_DIR, '.env')
+if os.path.exists(env_file):
+    with open(env_file, 'r') as f:
+        for line in f:
+            if '=' in line and not line.strip().startswith('#'):
+                k, v = line.strip().split('=', 1)
+                os.environ[k.strip()] = v.strip().strip('"').strip("'")
+
 # Groq LLM Initialization
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 groq_client = None
