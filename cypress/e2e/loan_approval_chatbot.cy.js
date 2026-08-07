@@ -1,7 +1,7 @@
 describe('ABC Credit Instant Loan Approval Engine & AI Chatbot Demo Suite', () => {
 
-  // Demo speed configuration: 2.5s pause after each step for speaking over the presentation
-  const STEP_PAUSE_MS = 2500;
+  // Demo speed configuration: 5.0s pause after each step for speaking over the presentation
+  const STEP_PAUSE_MS = 5000;
   const TYPE_SPEED_MS = 75;
 
   beforeEach(() => {
