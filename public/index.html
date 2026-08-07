@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABC Credit | AI Instant Loan Approval Chatbot</title>
+    <meta name="description" content="Instant vehicle loan pre-approval chatbot powered by real-time machine learning decisioning. Get approved in under 2 minutes.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-background">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <div class="layout-container">
+        <!-- Header / Navbar -->
+        <header class="app-header">
+            <div class="brand-logo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">ABC CREDIT</span>
+                    <span class="brand-subtitle">Instant Loan Decision Engine</span>
+                </div>
+            </div>
+
+            <div class="header-badges">
+                <div class="badge badge-pulse">
+                    <span class="status-dot"></span>
+                    <span>Real-Time ML Active</span>
+                </div>
+                <div class="badge badge-outline">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Goal: &le; 1.5 Mins</span>
+                </div>
+                <button id="toggle-audit-btn" class="btn-audit-toggle">
+                    <i class="fa-solid fa-database"></i> Audit Logs
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="chat-workspace">
+            <!-- Left Sidebar: Application Context & SLA Metrics -->
+            <aside class="sidebar-panel">
+                <div class="panel-card progress-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-list-check"></i> Application Progress</h3>
+                        <span id="step-percentage" class="step-pct">14%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar-fill" class="progress-bar-fill" style="width: 14%;"></div>
+                    </div>
+                    <div class="step-counter">
+                        <span id="step-indicator">Step 1 of 9</span>
+                        <span class="time-estimate"><i class="fa-regular fa-clock"></i> ~1 min left</span>
+                    </div>
+                </div>
+
+                <div class="panel-card metrics-card">
+                    <h3><i class="fa-solid fa-chart-line"></i> Decision Engine SLAs</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Model Accuracy</span>
+                        <span class="metric-value text-emerald">92.24%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">ROC-AUC Score</span>
+                        <span class="metric-value text-indigo">0.9079</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Decision SLA</span>
+                        <span class="metric-value text-violet">&le; 0.5 sec</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">PII Security</span>
+                        <span class="metric-value text-amber">100% Masked</span>
+                    </div>
+                </div>
+
+                <div class="panel-card features-card">
+                    <h3><i class="fa-solid fa-shield-check"></i> Why ABC Credit?</h3>
+                    <ul class="benefit-list">
+                        <li><i class="fa-solid fa-bolt text-amber"></i> Zero paperwork pre-approval</li>
+                        <li><i class="fa-solid fa-lock text-emerald"></i> Bank-grade encryption & PII privacy</li>
+                        <li><i class="fa-solid fa-percent text-indigo"></i> Lowest interest rate matching</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Center Chat Container -->
+            <section class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <!-- Dynamic chat messages will be rendered here -->
+                </div>
+
+                <!-- Chat Input Controls Panel -->
+                <div class="chat-input-panel">
+                    <div id="dynamic-input-area" class="dynamic-input-area">
+                        <!-- Step components will be dynamically rendered here -->
+                    </div>
+                    
+                    <div class="chat-nl-input-bar">
+                        <div class="nl-input-wrapper">
+                            <input type="text" id="chat-input-text" class="form-control nl-input" placeholder="Type naturally (e.g. 'I need 85k loan for TVS Jupiter in Pincode 500090 with 45k salary')...">
+                            <button id="btn-send-chat" class="btn btn-primary btn-nl-send">
+                                <i class="fa-solid fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                        <div class="nl-hint">
+                            <i class="fa-solid fa-sparkles text-amber"></i> <strong>Conversational Generative AI Mode</strong>: Asks minimum questions dynamically based on feature importance.
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Audit Repository Modal -->
+        <div id="audit-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-card">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-database"></i> Audit Repository & Log Inspector</h2>
+                    <button id="close-audit-btn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="audit-intro">Every application input, engineered feature vector, raw model score, and decision threshold is logged below with <strong>100% PII masking</strong> for compliance and transparency.</p>
+                    <div id="audit-logs-container" class="audit-logs-container">
+                        <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading audit logs...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

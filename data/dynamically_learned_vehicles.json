@@ -1,0 +1,37 @@
+{
+  "gixxer": {
+    "canonical_name": "Gixxer",
+    "engine_cc": 155.0,
+    "baseline_price": 104900.0,
+    "make_code": "APACHE",
+    "learned_at": "2026-08-07T02:07:45.134117"
+  },
+  "suzuki hayabusa": {
+    "canonical_name": "Suzuki Hayabusa",
+    "engine_cc": 1340.0,
+    "baseline_price": 1799000.0,
+    "make_code": "APACHE",
+    "learned_at": "2026-08-07T02:08:50.065510"
+  },
+  "ola s1 pro": {
+    "canonical_name": "Ola S1 Pro",
+    "engine_cc": 3.97,
+    "baseline_price": 159999.0,
+    "make_code": "JUPITER",
+    "learned_at": "2026-08-07T06:27:29.539961"
+  },
+  "honda shine": {
+    "canonical_name": "Honda Shine",
+    "engine_cc": 125.0,
+    "baseline_price": 80000.0,
+    "make_code": "SHINE",
+    "learned_at": "2026-08-07T06:33:27.721472"
+  },
+  "shine": {
+    "canonical_name": "Honda Shine",
+    "engine_cc": 125.0,
+    "baseline_price": 72000.0,
+    "make_code": "SHINE",
+    "learned_at": "2026-08-07T06:42:59.818993"
+  }
+}
