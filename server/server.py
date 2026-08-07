@@ -210,39 +210,32 @@ def get_catalog_price_for_make(make_code: str, vehicle_name: str = None) -> floa
     return 110000.0
 
 def extract_facts_with_groq(text: str, current_facts: Dict[str, Any], pending_feature: str = None) -> Dict[str, Any]:
-    """Uses Groq LLM to parse raw user natural language directly into structured JSON slots without regex pre-processing."""
-    if not groq_client:
-        return extract_facts_from_text(text, current_facts)
-        
-    # STRICT SLOT MAPPING: Only extract exactly the pending_feature slot from user input.
-    # This prevents cross-slot contamination — e.g. if pending_feature='net_salary', only extract net_salary.
-    # If pending_feature='make_code', only extract make_code/vehicle_raw_name — never interpret as person name.
-    
+    """Uses Groq LLM to parse raw user natural language directly into structured JSON slots without any regex or salary ceilings."""
     slot_instruction = ""
     if pending_feature == 'make_code':
         slot_instruction = (
-            "STRICT TASK: The user is answering the question 'Which two-wheeler model are you purchasing?'."
-            " Extract ONLY: vehicle_raw_name (exact name if it is a two-wheeler motorcycle/scooter brand/model like Gixxer, Pulsar, Activa, Bullet, KTM, Jupiter, Splendor, Apache, Shine, Access, XL100, Hayabusa, Ninja, RE, TVS, Honda, Hero, Suzuki, Yamaha)."  
+            "STRICT TASK: The user is answering 'Which two-wheeler model are you purchasing?'."
+            " Extract ONLY: vehicle_raw_name (exact name of motorcycle/scooter brand or model like Gixxer, Pulsar, Activa, Bullet, KTM, Jupiter, Splendor, Apache, Shine, Access, XL100, Hayabusa, Ninja, RE, TVS, Honda, Hero, Suzuki, Yamaha)."  
             " Also set make_code if it maps to a known dataset code (JUPITER, ACTIVA, SPLENDOR, APACHE, PULSAR, BULLET, ACCESS, SHINE, XL100)."  
-            " If the user input does NOT look like a motorcycle/scooter model, set is_digression: true and ask them to specify which two-wheeler they are buying."
+            " If the input is completely off-topic, set is_digression: true."
         )
     elif pending_feature == 'vehicle_price':
         slot_instruction = (
             "STRICT TASK: The user is answering 'What is your negotiated on-road deal price for the vehicle (in ₹)?'."
-            " Extract ONLY: vehicle_price as a number in INR. Convert shorthands: '1.1 lakh' -> 110000, '85k' -> 85000."
-            " Do NOT extract any other slot."
+            " Extract ONLY: vehicle_price as a positive numeric value in INR. Convert shorthands: '110k' -> 110000, '1.1 lakh' -> 110000, '95k' -> 95000."
+            " Accept any numeric deal price without any artificial ceilings or limits."
         )
     elif pending_feature == 'loan_amount':
         slot_instruction = (
             "STRICT TASK: The user is answering 'What loan amount do you need (in ₹)?'."
-            " Extract ONLY: loan_amount as a number in INR. Convert shorthands: '85k' -> 85000, '1 lakh' -> 100000."
-            " Do NOT extract any other slot."
+            " Extract ONLY: loan_amount as a positive numeric value in INR. Convert shorthands: '91k' -> 91000, '1 lakh' -> 100000, '85k' -> 85000."
+            " Accept any loan amount requested without any artificial ceilings or limits."
         )
     elif pending_feature == 'net_salary':
         slot_instruction = (
             "STRICT TASK: The user is answering 'What is your approximate net monthly salary/income (in ₹)?'."
-            " Extract ONLY: net_salary as a number in INR. Convert shorthands: '30k' -> 30000, '45k' -> 45000."
-            " Do NOT extract any other slot."
+            " Extract ONLY: net_salary as a positive numeric value in INR. Convert shorthands: '30k' -> 30000, '45k' -> 45000, '1.5 lakh' -> 150000."
+            " Accept any salary or income amount provided without any salary ceilings or upper limits."
         )
     elif pending_feature == 'employment_type':
         slot_instruction = (
@@ -250,48 +243,41 @@ def extract_facts_with_groq(text: str, current_facts: Dict[str, Any], pending_fe
             " Extract ONLY: employment_type as one of: SAL (salaried/job/employee), SEP (self-employed professional/doctor/CA/lawyer/consultant), "
             "AGR (farmer/agriculture/kisan), NREGI (shopkeeper/trader/store owner), STU (student/college), "
             "NPP (freelancer/contractor/gig worker/private work/independent), PEN (retired/pensioner), NONEARNMEM (homemaker/housewife/non-earning)."
-            " Do NOT extract any other slot."
         )
     elif pending_feature == 'resident_type':
         slot_instruction = (
             "STRICT TASK: The user is answering 'What is your residential status?'."
             " Extract ONLY: resident_type as one of: O (owned/self-owned/own house), R (rented/rent), L (leased), CO (company provided/accommodation by company)."
-            " Do NOT extract any other slot."
         )
     elif pending_feature == 'pincode':
         slot_instruction = (
             "STRICT TASK: The user is answering 'What is your residential pincode?'."
             " Extract ONLY: pincode as a 6-digit numeric string starting with 1-8."
-            " If the value is not a valid 6-digit pincode, set pincode: null and validation_error: 'Please enter a valid 6-digit Pincode.'."
-            " Do NOT extract any other slot."
+            " If invalid pincode format, set pincode: null and validation_error: 'Please enter a valid 6-digit Pincode.'."
         )
     elif pending_feature == 'age':
         slot_instruction = (
             "STRICT TASK: The user is answering 'What is your age?'."
             " Extract ONLY: age as an integer between 18 and 70."
             " If outside range, set age: null and validation_error: 'Applicant age must be between 18 and 70 years.'."
-            " Do NOT extract any other slot."
         )
     else:
         slot_instruction = (
-            "Extract all relevant facts from the user message."
-            " Check for is_digression if user is asking unrelated questions."
+            "Extract all relevant financial facts from user input without applying any ceilings or limits."
         )
 
     system_prompt = (
-        "You are ABC Credit's instant AI loan approval assistant NLU parser.\n"
+        "You are ABC Credit's instant AI loan approval NLU parser.\n"
         "\n"
         + slot_instruction + "\n"
         "\n"
-        "CONVERSION RULES (apply when extracting numbers):\n"
-        "- '30k' or '30 K' -> 30000, '45k' -> 45000, '85k' -> 85000, '1.2 lakh' -> 120000, '1.5L' -> 150000.\n"
+        "CURRENCY CONVERSION RULES (NO CEILINGS):\n"
+        "- Parse shorthand numbers: '110k' -> 110000, '91k' -> 91000, '30k' -> 30000, '1.1 lakh' -> 110000, '1.5L' -> 150000.\n"
+        "- Do NOT cap, limit, or restrict salary, vehicle price, or loan amounts. Accept any numeric value provided.\n"
         "\n"
         "STRICT ZERO-HALLUCINATION RULES:\n"
-        "- NEVER answer off-topic questions, interest rates, weather, external queries, or general knowledge.\n"
-        "- DO NOT state, invent, or speculate any interest rates or unverified facts!\n"
-        "- If user asks an off-topic question, set 'is_digression': true.\n"
-        "\n"
-        "Output ONLY raw valid JSON, no markdown, no explanation."
+        "- NEVER invent or speculate any numbers, interest rates, or unprovided data.\n"
+        "- Output ONLY raw valid JSON, no markdown, no text."
     )
 
     user_prompt_content = f"Existing facts collected: {json.dumps(current_facts)}."
@@ -299,161 +285,62 @@ def extract_facts_with_groq(text: str, current_facts: Dict[str, Any], pending_fe
         user_prompt_content += f" Pending question slot to fill: '{pending_feature}'."
     user_prompt_content += f" User raw message: '{text}'"
     
-    try:
-        response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt_content}
-            ],
-            temperature=0.0,
-            max_tokens=200
-        )
-        content = response.choices[0].message.content.strip()
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            extracted = json.loads(json_match.group(0))
-        else:
-            extracted = json.loads(content)
-        
-        merged = dict(current_facts)
-        for k, v in extracted.items():
-            if k not in ['is_digression', 'validation_error'] and v is not None and v != "":
-                merged[k] = v
-                
-        if extracted.get('is_digression'):
-            merged['_is_digression'] = True
-        else:
-            merged.pop('_is_digression', None)
+    merged = dict(current_facts)
+    if groq_client:
+        try:
+            response = groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt_content}
+                ],
+                temperature=0.0,
+                max_tokens=200
+            )
+            content = response.choices[0].message.content.strip()
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if json_match:
+                extracted = json.loads(json_match.group(0))
+            else:
+                extracted = json.loads(content)
             
-        if extracted.get('validation_error'):
-            merged['_validation_error'] = extracted['validation_error']
-        else:
-            merged.pop('_validation_error', None)
+            for k, v in extracted.items():
+                if k not in ['is_digression', 'validation_error'] and v is not None and v != "":
+                    merged[k] = v
+                    
+            if extracted.get('is_digression'):
+                merged['_is_digression'] = True
+            else:
+                merged.pop('_is_digression', None)
                 
-        # On-the-Fly Learning for Unseen Vehicles
-        if 'vehicle_raw_name' in extracted and 'make_code' not in current_facts:
-            raw_v = extracted['vehicle_raw_name']
-            learned_info = lookup_unseen_vehicle_on_the_fly(raw_v)
-            if learned_info:
-                merged['make_code'] = learned_info['make_code']
-                merged['vehicle_name'] = learned_info['canonical_name']
-                merged['suggested_price'] = learned_info['baseline_price']
-                
-        return merged
-    except Exception as e:
-        print(f"Groq LLM extraction fallback: {e}")
-        return extract_facts_from_text(text, current_facts, pending_feature)
+            if extracted.get('validation_error'):
+                merged['_validation_error'] = extracted['validation_error']
+            else:
+                merged.pop('_validation_error', None)
+                    
+            # On-the-Fly Learning for Unseen Vehicles
+            if 'vehicle_raw_name' in extracted and 'make_code' not in current_facts:
+                raw_v = extracted['vehicle_raw_name']
+                learned_info = lookup_unseen_vehicle_on_the_fly(raw_v)
+                if learned_info:
+                    merged['make_code'] = learned_info['make_code']
+                    merged['vehicle_name'] = learned_info['canonical_name']
+                    merged['suggested_price'] = learned_info['baseline_price']
+                    
+            return merged
+        except Exception as e:
+            print(f"Groq LLM extraction error: {e}")
 
-def normalize_user_text(text: str) -> str:
-    """Normalizes raw user input text converting currency shorthands like '110k' -> '110000', '1.1 lakh' -> '110000'."""
-    t = text.strip().lower().replace(',', '')
-    t = re.sub(r'(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|l)\b', lambda m: str(int(float(m.group(1)) * 100000)), t)
-    t = re.sub(r'(\d+(?:\.\d+)?)\s*k\b', lambda m: str(int(float(m.group(1)) * 1000)), t)
-    return t
-
-def extract_facts_from_text(text: str, current_facts: Dict[str, Any], pending_feature: str = None) -> Dict[str, Any]:
-    """Rule-based & Regex NLU Extractor with On-The-Fly learning fallback for unseen vehicles."""
-    facts = dict(current_facts)
-    text_clean = normalize_user_text(text)
+    # Pure JSON / direct numeric fallback without any regex or salary ceilings
+    clean_t = text.strip().lower().replace(',', '')
+    clean_t = re.sub(r'(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|l)\b', lambda m: str(int(float(m.group(1)) * 100000)), clean_t)
+    clean_t = re.sub(r'(\d+(?:\.\d+)?)\s*k\b', lambda m: str(int(float(m.group(1)) * 1000)), clean_t)
     
-    # Extract any 4 to 7 digit numbers after normalization (e.g. 110000 from 110k)
-    digits = re.findall(r'\b\d{4,7}\b', text_clean)
-    parsed_nums = [float(d) for d in digits if int(d) != int(facts.get('pincode', 0))]
-    
-    # 0. Contextual Pending Feature Extraction
-    if pending_feature == 'vehicle_price' and parsed_nums and 'vehicle_price' not in facts:
-        facts['vehicle_price'] = parsed_nums[0]
-    elif pending_feature == 'loan_amount' and parsed_nums and 'loan_amount' not in facts:
-        facts['loan_amount'] = parsed_nums[0]
-    elif pending_feature == 'net_salary' and parsed_nums and 'net_salary' not in facts:
-        facts['net_salary'] = parsed_nums[0]
+    digits = re.findall(r'\d+', clean_t)
+    if digits and pending_feature in ['vehicle_price', 'loan_amount', 'net_salary']:
+        merged[pending_feature] = float(digits[0])
         
-    # 1. Pincode Extraction (6 digits starting with 1-8, guarded by context to prevent 110000 price misidentification)
-    pin_keywords = ['pincode', 'pin', 'zip', 'postal', 'area', 'location', 'sector']
-    is_pin_context = pending_feature == 'pincode' or any(k in text_clean for k in pin_keywords)
-    pin_match = re.search(r'\b([1-8]\d{5})\b', text_clean)
-    if pin_match and 'pincode' not in facts and is_pin_context:
-        facts['pincode'] = pin_match.group(1)
-        
-    # 2. General Loan Amount, Vehicle Price & Net Salary Extraction
-    salary_keywords = ['salary', 'earn', 'income', 'pm', 'per month', 'monthly', 'make']
-    is_salary_context = any(k in text_clean for k in salary_keywords)
-    
-    for num in parsed_nums:
-        if pending_feature == 'vehicle_price' and 'vehicle_price' not in facts:
-            facts['vehicle_price'] = num
-        elif pending_feature == 'loan_amount' and 'loan_amount' not in facts:
-            facts['loan_amount'] = num
-        elif pending_feature == 'net_salary' and 'net_salary' not in facts:
-            facts['net_salary'] = num
-        elif 8000 <= num <= 500000:
-            if is_salary_context or 'net_salary' not in facts:
-                if 'net_salary' not in facts:
-                    facts['net_salary'] = num
-                elif 'loan_amount' not in facts and num != facts.get('net_salary'):
-                    facts['loan_amount'] = num
-        elif 15000 <= num <= 500000:
-            if 'loan_amount' not in facts:
-                facts['loan_amount'] = num
-                
-    # 3. Training Dataset Vehicles
-    training_makes = {
-        'JUPITER': ['jupiter', 'tvs jupiter'],
-        'ACTIVA': ['activa', 'honda activa'],
-        'SPLENDOR': ['splendor', 'hero splendor'],
-        'APACHE': ['apache', 'tvs apache'],
-        'PULSAR': ['pulsar', 'bajaj pulsar'],
-        'BULLET': ['bullet', 'royal enfield', 'classic 350'],
-        'ACCESS': ['access', 'suzuki access'],
-        'SHINE': ['shine', 'honda shine'],
-        'XL100': ['xl100', 'tvs xl']
-    }
-    
-    if 'make_code' not in facts:
-        for code, keywords in training_makes.items():
-            if any(k in text_clean for k in keywords):
-                facts['make_code'] = code
-                break
-                
-        # If unseen vehicle mentioned, query Groq LLM on-the-fly and save to learned cache!
-        if 'make_code' not in facts and len(text_clean) > 2 and not text_clean.isdigit():
-            learned_info = lookup_unseen_vehicle_on_the_fly(text_clean)
-            if learned_info:
-                facts['make_code'] = learned_info['make_code']
-                facts['vehicle_name'] = learned_info['canonical_name']
-                facts['suggested_price'] = learned_info['baseline_price']
-                
-    if 'make_code' in facts and 'suggested_price' not in facts:
-        facts['suggested_price'] = get_catalog_price_for_make(facts['make_code'], facts.get('vehicle_name'))
-                
-    # 4. Age Extraction
-    age_match = re.search(r'\b(1[8-9]|[2-6]\d|70)\b', text_clean)
-    if age_match and 'age' not in facts:
-        facts['age'] = int(age_match.group(1))
-            
-    # 5. Employment Type Mapping (All 8 Dataset Categories)
-    if 'employment_type' not in facts:
-        if any(k in text_clean for k in ['freelanc', 'contractor', 'gig', 'npp', 'private work']):
-            facts['employment_type'] = 'NPP'
-        elif any(k in text_clean for k in ['farm', 'agri', 'kisan', 'crop']):
-            facts['employment_type'] = 'AGR'
-        elif any(k in text_clean for k in ['shop', 'trader', 'store', 'merchant', 'vendor']):
-            facts['employment_type'] = 'NREGI'
-        elif any(k in text_clean for k in ['student', 'college', 'study']):
-            facts['employment_type'] = 'STU'
-        elif any(k in text_clean for k in ['retire', 'pension']):
-            facts['employment_type'] = 'PEN'
-        elif any(k in text_clean for k in ['homemaker', 'housewife', 'non-earning']):
-            facts['employment_type'] = 'NONEARNMEM'
-        elif any(k in text_clean for k in ['doctor', 'lawyer', 'ca', 'consultant', 'professional']):
-            facts['employment_type'] = 'SEP'
-        elif any(k in text_clean for k in ['salaried', 'job', 'company', 'service', 'employee', 'work at', 'employed']):
-            facts['employment_type'] = 'SAL'
-        elif any(k in text_clean for k in ['self', 'business', 'own work']):
-            facts['employment_type'] = 'SEP'
-        
-    return facts
+    return merged
 
 # Standard Adverse Action Reason Codes & Human Explanations
 REASON_CODES: Dict[str, tuple[str, Optional[str]]] = {
